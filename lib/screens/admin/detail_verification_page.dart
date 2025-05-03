@@ -3,65 +3,73 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-class DetailVerificationPage extends StatelessWidget {
+class DetailVerificationPage extends StatefulWidget {
   final Map<String, dynamic> report;
 
   const DetailVerificationPage({super.key, required this.report});
 
-Future<void> approveReport(BuildContext context, String reportId) async {
-  final supabase = Supabase.instance.client;
-
-  // Ambil userId dari laporan
-  final reportResponse = await supabase
-      .from('reports')
-      .select('userId')
-      .eq('id', reportId)
-      .single();
-
-  final userId = reportResponse['userId'];
-
-  if (userId == null) return;
-
-  // Ambil poin saat ini dari profil
-  final profileResponse = await supabase
-      .from('profile')
-      .select('points')
-      .eq('id', userId)
-      .single();
-
-  final currentPoints = profileResponse['points'] ?? 0;
-  final newPoints = currentPoints + 10;
-
-  // Update poin di tabel profile
-  await supabase
-      .from('profile')
-      .update({'points': newPoints})
-      .eq('id', userId);
-
-  // Update status laporan
-  await supabase
-      .from('reports')
-      .update({'status': 'Disetujui'})
-      .eq('id', reportId);
-
-  if (context.mounted) {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text('Laporan berhasil disetujui & poin ditambahkan')));
-
-    Navigator.pop(context, true);
-  }
+  @override
+  State<DetailVerificationPage> createState() => _DetailVerificationPageState();
 }
 
+class _DetailVerificationPageState extends State<DetailVerificationPage> {
+  Future<void> approveReport(BuildContext context, String reportId) async {
+    final supabase = Supabase.instance.client;
+
+    // Ambil userId dari laporan
+    final reportResponse =
+        await supabase
+            .from('reports')
+            .select('userId')
+            .eq('id', reportId)
+            .single();
+
+    final userId = reportResponse['userId'];
+
+    if (userId == null) return;
+
+    // Ambil poin saat ini dari profil
+    final profileResponse =
+        await supabase
+            .from('profile')
+            .select('poin')
+            .eq('id', userId)
+            .single();
+
+    final currentPoints = profileResponse['poin'] ?? 0;
+    final newPoints = currentPoints + 100;
+
+    // Update poin di tabel profile
+    await supabase
+        .from('profile')
+        .update({'poin': newPoints})
+        .eq('id', userId);
+
+    // Update status laporan
+    await supabase
+        .from('reports')
+        .update({'status': 'Disetujui'})
+        .eq('id', reportId);
+
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Laporan berhasil disetujui & poin ditambahkan'),
+        ),
+      );
+
+      Navigator.pop(context, true);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    final description = report['description'] ?? '';
-    final createdAt = report['created_at'] ?? '';
-    final status = report['status'] ?? 'Belum Diketahui';
-    final lat = double.tryParse(report['latitude'].toString()) ?? 0;
-    final lng = double.tryParse(report['longitude'].toString()) ?? 0;
-    final imagePath = report['image_url']?.toString();
+    final description = widget.report['description'] ?? '';
+    final createdAt = widget.report['created_at'] ?? '';
+    final status = widget.report['status'] ?? 'Belum Diketahui';
+    final lat = double.tryParse(widget.report['latitude'].toString()) ?? 0;
+    final lng = double.tryParse(widget.report['longitude'].toString()) ?? 0;
+    final imagePath = widget.report['image_url']?.toString();
     final imageUrl =
         (imagePath != null && imagePath.isNotEmpty)
             ? 'https://truudpslqifmtpphzmqe.supabase.co/storage/v1/object/public/images/$imagePath'
@@ -77,7 +85,10 @@ Future<void> approveReport(BuildContext context, String reportId) async {
             Text("Deskripsi:", style: TextStyle(fontWeight: FontWeight.bold)),
             Text(description),
             SizedBox(height: 12),
-            Text("Waktu Laporan:", style: TextStyle(fontWeight: FontWeight.bold)),
+            Text(
+              "Waktu Laporan:",
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
             Text(createdAt.toString()),
             SizedBox(height: 12),
             Text("Status:", style: TextStyle(fontWeight: FontWeight.bold)),
@@ -101,10 +112,14 @@ Future<void> approveReport(BuildContext context, String reportId) async {
             SizedBox(
               height: 250,
               child: FlutterMap(
-                options: MapOptions(initialCenter: LatLng(lat, lng), initialZoom: 15.0),
+                options: MapOptions(
+                  initialCenter: LatLng(lat, lng),
+                  initialZoom: 15.0,
+                ),
                 children: [
                   TileLayer(
-                    urlTemplate: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+                    urlTemplate:
+                        "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
                     subdomains: ['a', 'b', 'c'],
                     userAgentPackageName: 'com.example.app',
                   ),
@@ -112,7 +127,11 @@ Future<void> approveReport(BuildContext context, String reportId) async {
                     markers: [
                       Marker(
                         point: LatLng(lat, lng),
-                        child: Icon(Icons.location_pin, color: Colors.red, size: 40),
+                        child: Icon(
+                          Icons.location_pin,
+                          color: Colors.red,
+                          size: 40,
+                        ),
                       ),
                     ],
                   ),
@@ -126,10 +145,7 @@ Future<void> approveReport(BuildContext context, String reportId) async {
                 child: Container(
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
-                      colors: [
-                        Color(0xFF4CAF50),
-                        Color(0xFF8BC34A),
-                      ],
+                      colors: [Color(0xFF4CAF50), Color(0xFF8BC34A)],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                     ),
@@ -138,10 +154,17 @@ Future<void> approveReport(BuildContext context, String reportId) async {
                   child: Material(
                     color: Colors.transparent,
                     child: InkWell(
-                      onTap: () => approveReport(context, report['id'].toString()),
+                      onTap:
+                          () => approveReport(
+                            context,
+                            widget.report['id'].toString(),
+                          ),
                       borderRadius: BorderRadius.circular(6),
                       child: Padding(
-                        padding: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                        padding: EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 10,
+                        ),
                         child: Text(
                           'Setujui Laporan',
                           style: TextStyle(
